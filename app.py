@@ -14,6 +14,16 @@ from scipy import stats  # Add this line
 # Set page configuration
 st.set_page_config(page_title="Trading Strategy Dashboard", layout="wide")
 
+# Timestamp function
+def get_current_timestamp():
+    utc_now = datetime.now(pytz.UTC)
+    formatted_time = utc_now.strftime('%Y-%m-%d %H:%M:%S')
+    return formatted_time
+
+# Initialize timestamp placeholder
+if 'timestamp_placeholder' not in st.session_state:
+    st.session_state.timestamp_placeholder = None
+
 
 # Second section - simulation function
 def simulate_trading_session(
@@ -179,8 +189,15 @@ st.markdown("Multi-Instrument Trading Strategy Analysis")
 
 # Sidebar configurations
 with st.sidebar:
-    st.markdown("**Current Date and Time (UTC):** 2025-01-13 19:00:15")
-    st.markdown("**Current User's Login:** Mamdouh")
+    # Create a placeholder for the timestamp if it doesn't exist
+    if st.session_state.timestamp_placeholder is None:
+        st.session_state.timestamp_placeholder = st.empty()
+    
+    # Update the timestamp
+    st.session_state.timestamp_placeholder.markdown(
+        f"**Current Date and Time (UTC - YYYY-MM-DD HH:MM:SS formatted):** {get_current_timestamp()}"
+    )
+    st.markdown("**Current User's Login:** Midoelafreet")
     st.markdown("---")
     
     st.header("Trading Parameters")
@@ -389,13 +406,13 @@ with st.expander("Risk Management Calculator", expanded=True):
             else:
                 st.session_state.yen_trades_taken += 1
                 
-            # Add trade to history
+            # Add trade to history with current timestamp
             trade_data = {
                 'market': market,
                 'contracts': num_contracts,
                 'result': trade_result,
                 'pnl': potential_pnl,
-                'timestamp': "2025-01-14 11:35:04"  # Using your timestamp
+                'timestamp': get_current_timestamp()
             }
             if 'trade_history' not in st.session_state:
                 st.session_state.trade_history = []
@@ -487,7 +504,7 @@ with st.expander("Daily Performance & Export", expanded=True):
     st.subheader("Export Trading Data")
     if st.session_state.trade_history:
         df_export = pd.DataFrame(st.session_state.trade_history)
-        current_time = "2025-01-14 11:35:04"  # Using your timestamp
+        current_time = get_current_timestamp()
         csv = df_export.to_csv(index=False)
         
         st.download_button(
