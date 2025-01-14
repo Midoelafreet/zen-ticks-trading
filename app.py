@@ -220,20 +220,28 @@ st.markdown("Multi-Instrument Trading Strategy Analysis")
 
 # Sidebar configurations
 with st.sidebar:
-    # Create HTML element for timestamp
+    # Create a container for the clock
     st.markdown(
-        f"""
-        <div style='margin-bottom: 20px;'>
-            <strong>Current Date and Time (New York Time):</strong><br/>
-            <div id='clock' style='font-family: monospace; font-size: 14px;'></div>
-        </div>
-        <div>
-            <strong>Current User's Login:</strong> Midoelafreet
-        </div>
-        <hr>
+        """
+        <style>
+            .clock-container { margin-bottom: 20px; }
+            .clock { font-family: monospace; font-size: 14px; }
+        </style>
+        """, 
+        unsafe_allow_html=True
+    )
+    
+    # Create empty container for the clock
+    clock_container = st.empty()
+    
+    # JavaScript to update the clock
+    st.components.v1.html(
+        """
+        <div id="clock" class="clock"></div>
         <script>
             function updateClock() {
-                const options = {
+                var now = new Date();
+                var options = {
                     timeZone: 'America/New_York',
                     year: 'numeric',
                     month: '2-digit',
@@ -243,27 +251,20 @@ with st.sidebar:
                     second: '2-digit',
                     hour12: false
                 };
-
-                const now = new Date();
-                const timeStr = now.toLocaleString('en-US', options)
+                var timeStr = now.toLocaleString('en-US', options)
                     .replace(',', '')
                     .replace(/(\d+)\/(\d+)\/(\d+)/, '$3-$1-$2');
-
                 document.getElementById('clock').innerHTML = timeStr;
-                requestAnimationFrame(updateClock);
+                setTimeout(updateClock, 1000);
             }
-
-            // Start the clock immediately
-            if (document.getElementById('clock')) {
-                updateClock();
-            } else {
-                document.addEventListener('DOMContentLoaded', updateClock);
-            }
+            updateClock();
         </script>
         """,
-        unsafe_allow_html=True
+        height=50,
     )
     
+    st.markdown("**Current User's Login:** Midoelafreet")
+    st.markdown("---")
     st.header("Trading Parameters")
     
     # Monte Carlo Parameters
