@@ -220,23 +220,28 @@ st.markdown("Multi-Instrument Trading Strategy Analysis")
 
 # Sidebar configurations
 with st.sidebar:
-    # Create a container for the clock
+    # Create a container for the clock with white text
     st.markdown(
         """
         <style>
             .clock-container { margin-bottom: 20px; }
-            .clock { font-family: monospace; font-size: 14px; }
+            .clock { 
+                font-family: monospace; 
+                font-size: 14px;
+                color: white !important;
+            }
+            .white-text {
+                color: white !important;
+            }
         </style>
         """, 
         unsafe_allow_html=True
     )
     
-    # Create empty container for the clock
-    clock_container = st.empty()
-    
     # JavaScript to update the clock
     st.components.v1.html(
         """
+        <div class="white-text"><strong>Current Date and Time (New York Time):</strong></div>
         <div id="clock" class="clock"></div>
         <script>
             function updateClock() {
@@ -260,10 +265,10 @@ with st.sidebar:
             updateClock();
         </script>
         """,
-        height=50,
+        height=70,
     )
     
-    st.markdown("**Current User's Login:** Midoelafreet")
+    st.markdown("<div class='white-text'><strong>Current User's Login:</strong> Midoelafreet</div>", unsafe_allow_html=True)
     st.markdown("---")
     st.header("Trading Parameters")
     
