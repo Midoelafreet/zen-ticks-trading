@@ -388,16 +388,30 @@ with st.expander("Risk Management Calculator", expanded=True):
                 st.session_state.zb_trades_taken += 1
             else:
                 st.session_state.yen_trades_taken += 1
+                
+            # Add trade to history
+            trade_data = {
+                'market': market,
+                'contracts': num_contracts,
+                'result': trade_result,
+                'pnl': potential_pnl,
+                'timestamp': "2025-01-14 11:35:04"  # Using your timestamp
+            }
+            if 'trade_history' not in st.session_state:
+                st.session_state.trade_history = []
+            st.session_state.trade_history.append(trade_data)
+            
             st.success(f"Trade added successfully! New daily P&L: ${st.session_state.current_daily_pnl:.2f}")
-            st.rerun()  # Changed from experimental_rerun to rerun
+            st.rerun()
 
     # Reset Daily Stats Button
     if st.button("Reset Daily Stats"):
         st.session_state.current_daily_pnl = 0.0
         st.session_state.zb_trades_taken = 0
         st.session_state.yen_trades_taken = 0
+        st.session_state.trade_history = []  # Clear trade history
         st.success("Daily stats reset successfully!")
-        st.rerun()  # Changed from experimental_rerun to rerun
+        st.rerun()
 
     # Risk Analysis
     st.subheader("Risk Analysis")
@@ -420,6 +434,76 @@ with st.expander("Risk Management Calculator", expanded=True):
         max_yen_trades = int(remaining_risk / abs(yen_loss)) if remaining_risk > 0 else 0
         st.metric("Max Additional Yen Trades Possible", 
                  min(max_yen_trades, trades_per_day_yen - st.session_state.yen_trades_taken))
+
+# PnL Monitoring and Export Section
+st.header("Trading Performance Analytics")
+with st.expander("Daily Performance & Export", expanded=True):
+    # Initialize trade history if it doesn't exist
+    if 'trade_history' not in st.session_state:
+        st.session_state.trade_history = []
+    
+    # Create columns for charts
+    chart_col1, chart_col2 = st.columns(2)
+    
+    with chart_col1:
+        # Cumulative PnL Chart
+        if st.session_state.trade_history:
+            df_trades = pd.DataFrame(st.session_state.trade_history)
+            df_trades['cumulative_pnl'] = df_trades['pnl'].cumsum()
+            
+            fig_pnl = px.line(df_trades, 
+                            y='cumulative_pnl',
+                            title='Cumulative PnL Throughout the Day',
+                            labels={'cumulative_pnl': 'Cumulative PnL ($)',
+                                   'index': 'Trade Number'})
+            fig_pnl.add_hline(y=0, line_dash="dash", line_color="gray")
+            st.plotly_chart(fig_pnl, use_container_width=True)
+        else:
+            st.info("No trades recorded yet today")
+    
+    with chart_col2:
+        # Win Rate by Market
+        if st.session_state.trade_history:
+            win_rates = {}
+            for market_type in ['ZB', 'Yen']:
+                market_trades = [t for t in st.session_state.trade_history if t['market'] == market_type]
+                if market_trades:
+                    wins = len([t for t in market_trades if t['pnl'] > 0])
+                    total = len(market_trades)
+                    win_rates[market_type] = (wins / total) * 100
+            
+            fig_winrate = px.bar(
+                x=list(win_rates.keys()),
+                y=list(win_rates.values()),
+                title='Win Rate by Market',
+                labels={'x': 'Market', 'y': 'Win Rate (%)'}
+            )
+            fig_winrate.update_layout(yaxis_range=[0, 100])
+            st.plotly_chart(fig_winrate, use_container_width=True)
+        else:
+            st.info("No trades recorded yet today")
+
+    # Export Section
+    st.subheader("Export Trading Data")
+    if st.session_state.trade_history:
+        df_export = pd.DataFrame(st.session_state.trade_history)
+        current_time = "2025-01-14 11:35:04"  # Using your timestamp
+        csv = df_export.to_csv(index=False)
+        
+        st.download_button(
+            label="📥 Download Trading Data (CSV)",
+            data=csv,
+            file_name=f"trading_data_{current_time.split()[0]}.csv",
+            mime="text/csv",
+            key="download_csv",
+            help="Click to download your trading data as a CSV file"
+        )
+        
+        # Display current data
+        st.dataframe(df_export, use_container_width=True)
+    else:
+        st.info("No trades to export yet")
+
     
 # Main content area - Simulation execution
 if st.button("Run Monte Carlo Simulation", type="primary"):
