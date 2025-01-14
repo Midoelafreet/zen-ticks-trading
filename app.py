@@ -233,6 +233,12 @@ with st.sidebar:
             .white-text {
                 color: white !important;
             }
+            .stMarkdown div {
+                color: white !important;
+            }
+            .element-container div {
+                color: white !important;
+            }
         </style>
         """, 
         unsafe_allow_html=True
@@ -241,8 +247,10 @@ with st.sidebar:
     # JavaScript to update the clock
     st.components.v1.html(
         """
-        <div class="white-text"><strong>Current Date and Time (New York Time):</strong></div>
-        <div id="clock" class="clock"></div>
+        <div style="color: white;">
+            <strong>Current Date and Time (New York Time):</strong>
+            <div id="clock" style="color: white; margin-top: 5px;"></div>
+        </div>
         <script>
             function updateClock() {
                 var now = new Date();
@@ -268,8 +276,8 @@ with st.sidebar:
         height=70,
     )
     
-    st.markdown("<div class='white-text'><strong>Current User's Login:</strong> Midoelafreet</div>", unsafe_allow_html=True)
-    st.markdown("---")
+    st.markdown('<p style="color: white;"><strong>Current User\'s Login:</strong> Midoelafreet</p>', unsafe_allow_html=True)
+    st.markdown('<hr style="margin: 15px 0;">', unsafe_allow_html=True)
     st.header("Trading Parameters")
     
     # Monte Carlo Parameters
