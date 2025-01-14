@@ -16,11 +16,8 @@ st.set_page_config(page_title="Trading Strategy Dashboard", layout="wide")
 
 # Timestamp function
 def get_current_timestamp():
-    # Get New York timezone
     ny_tz = pytz.timezone('America/New_York')
-    # Get current time in NY
     ny_time = datetime.now(ny_tz)
-    # Format the time
     formatted_time = ny_time.strftime('%Y-%m-%d %H:%M:%S')
     return formatted_time
 
@@ -220,17 +217,43 @@ st.markdown("Multi-Instrument Trading Strategy Analysis")
 
 # Sidebar configurations
 with st.sidebar:
-    # Create HTML element for timestamp
     st.markdown(
-        f"""
+        """
+        <style>
+            @keyframes fadeInOut {
+                0% { opacity: 1; }
+                100% { opacity: 1; }
+            }
+        </style>
         <div style='margin-bottom: 20px;'>
             <strong>Current Date and Time (New York Time):</strong><br/>
-            <span id='current-timestamp'>{get_current_timestamp()}</span>
+            <div id='clock' style='animation: fadeInOut 1s infinite;'></div>
         </div>
         <div>
             <strong>Current User's Login:</strong> Midoelafreet
         </div>
         <hr>
+        <script>
+            function updateClock() {
+                const options = {
+                    timeZone: 'America/New_York',
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    hour12: false
+                };
+                const now = new Date();
+                const timeStr = now.toLocaleString('en-US', options)
+                    .replace(',', '')
+                    .replace(/(\d+)\/(\d+)\/(\d+)/, '$3-$1-$2');
+                document.getElementById('clock').textContent = timeStr;
+                setTimeout(updateClock, 1000);
+            }
+            updateClock();
+        </script>
         """,
         unsafe_allow_html=True
     )
