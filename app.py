@@ -16,13 +16,44 @@ st.set_page_config(page_title="Trading Strategy Dashboard", layout="wide")
 
 # Timestamp function
 def get_current_timestamp():
-    utc_now = datetime.now(pytz.UTC)
-    formatted_time = utc_now.strftime('%Y-%m-%d %H:%M:%S')
+    # Get New York timezone
+    ny_tz = pytz.timezone('America/New_York')
+    # Get current time in NY
+    ny_time = datetime.now(ny_tz)
+    # Format the time
+    formatted_time = ny_time.strftime('%Y-%m-%d %H:%M:%S')
     return formatted_time
 
 # Initialize timestamp placeholder
 if 'timestamp_placeholder' not in st.session_state:
     st.session_state.timestamp_placeholder = None
+
+# Auto-refresh script
+st.markdown(
+    """
+    <script>
+        function updateTimestamp() {
+            const options = {
+                timeZone: 'America/New_York',
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false
+            };
+            const timestamp = new Date().toLocaleString('en-US', options)
+                .replace(',', '')
+                .replace(/(\d+)\/(\d+)\/(\d+)/, '$3-$1-$2');
+            document.getElementById('current-timestamp').textContent = timestamp;
+            setTimeout(updateTimestamp, 1000);
+        }
+        updateTimestamp();
+    </script>
+    """,
+    unsafe_allow_html=True
+)
 
 
 # Second section - simulation function
@@ -189,16 +220,20 @@ st.markdown("Multi-Instrument Trading Strategy Analysis")
 
 # Sidebar configurations
 with st.sidebar:
-    # Create a placeholder for the timestamp if it doesn't exist
-    if st.session_state.timestamp_placeholder is None:
-        st.session_state.timestamp_placeholder = st.empty()
-    
-    # Update the timestamp
-    st.session_state.timestamp_placeholder.markdown(
-        f"**Current Date and Time (UTC - YYYY-MM-DD HH:MM:SS formatted):** {get_current_timestamp()}"
+    # Create HTML element for timestamp
+    st.markdown(
+        f"""
+        <div style='margin-bottom: 20px;'>
+            <strong>Current Date and Time (New York Time):</strong><br/>
+            <span id='current-timestamp'>{get_current_timestamp()}</span>
+        </div>
+        <div>
+            <strong>Current User's Login:</strong> Midoelafreet
+        </div>
+        <hr>
+        """,
+        unsafe_allow_html=True
     )
-    st.markdown("**Current User's Login:** Midoelafreet")
-    st.markdown("---")
     
     st.header("Trading Parameters")
     
