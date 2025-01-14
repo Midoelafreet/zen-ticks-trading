@@ -21,15 +21,13 @@ def get_current_timestamp():
     formatted_time = ny_time.strftime('%Y-%m-%d %H:%M:%S')
     return formatted_time
 
-# Initialize timestamp placeholder
-if 'timestamp_placeholder' not in st.session_state:
-    st.session_state.timestamp_placeholder = None
+
 
 # Auto-refresh script
 st.markdown(
     """
     <script>
-        function updateTimestamp() {
+        function updateClock() {
             const options = {
                 timeZone: 'America/New_York',
                 year: 'numeric',
@@ -40,13 +38,18 @@ st.markdown(
                 second: '2-digit',
                 hour12: false
             };
-            const timestamp = new Date().toLocaleString('en-US', options)
+            const now = new Date();
+            const timeStr = now.toLocaleString('en-US', options)
                 .replace(',', '')
                 .replace(/(\d+)\/(\d+)\/(\d+)/, '$3-$1-$2');
-            document.getElementById('current-timestamp').textContent = timestamp;
-            setTimeout(updateTimestamp, 1000);
+            document.getElementById('clock').innerHTML = timeStr;
+            requestAnimationFrame(updateClock);
         }
-        updateTimestamp();
+        if (document.getElementById('clock')) {
+            updateClock();
+        } else {
+            document.addEventListener('DOMContentLoaded', updateClock);
+        }
     </script>
     """,
     unsafe_allow_html=True
@@ -217,17 +220,12 @@ st.markdown("Multi-Instrument Trading Strategy Analysis")
 
 # Sidebar configurations
 with st.sidebar:
+    # Create HTML element for timestamp
     st.markdown(
-        """
-        <style>
-            @keyframes fadeInOut {
-                0% { opacity: 1; }
-                100% { opacity: 1; }
-            }
-        </style>
+        f"""
         <div style='margin-bottom: 20px;'>
             <strong>Current Date and Time (New York Time):</strong><br/>
-            <div id='clock' style='animation: fadeInOut 1s infinite;'></div>
+            <div id='clock' style='font-family: monospace; font-size: 14px;'></div>
         </div>
         <div>
             <strong>Current User's Login:</strong> Midoelafreet
@@ -245,14 +243,22 @@ with st.sidebar:
                     second: '2-digit',
                     hour12: false
                 };
+
                 const now = new Date();
                 const timeStr = now.toLocaleString('en-US', options)
                     .replace(',', '')
                     .replace(/(\d+)\/(\d+)\/(\d+)/, '$3-$1-$2');
-                document.getElementById('clock').textContent = timeStr;
-                setTimeout(updateClock, 1000);
+
+                document.getElementById('clock').innerHTML = timeStr;
+                requestAnimationFrame(updateClock);
             }
-            updateClock();
+
+            // Start the clock immediately
+            if (document.getElementById('clock')) {
+                updateClock();
+            } else {
+                document.addEventListener('DOMContentLoaded', updateClock);
+            }
         </script>
         """,
         unsafe_allow_html=True
