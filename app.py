@@ -170,20 +170,25 @@ if st.session_state.trade_history:
     df_export = pd.DataFrame(st.session_state.trade_history)
     
     # Add timestamp to the export
-    current_time = "2025-01-14 11:21:36"  # Current timestamp
+    current_time = "2025-01-14 11:28:14"  # Updated timestamp
     csv = df_export.to_csv(index=False)
     
+    # Make the download button more visible
+    st.markdown("### Download Your Trading Data")
     st.download_button(
-        label="Download Trading Data (CSV)",
+        label="📥 Download Trading Data (CSV)",
         data=csv,
         file_name=f"trading_data_{current_time.split()[0]}.csv",
         mime="text/csv",
+        key="download_csv",
+        help="Click to download your trading data as a CSV file"
     )
     
-    # Display current data in a table
+    # Display current data in a table with a header
+    st.markdown("### Current Trading Data")
     st.dataframe(df_export, use_container_width=True)
 else:
-    st.info("No trades to export yet")
+    st.info("💡 No trades to export yet. Add some trades using the Risk Manager Calculator above!")
 
 
 # Add Trade and Reset Buttons
