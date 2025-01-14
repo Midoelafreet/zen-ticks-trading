@@ -1,9 +1,4 @@
-# -------------------------------------------------------------
-# Trading Strategy Dashboard with Dynamic Tick-Based Risk Manager
-# Written for Streamlit
-# -------------------------------------------------------------
-
-# 1. --- Imports and Setup ---
+# First section - imports and setup
 import streamlit as st
 import numpy as np
 from typing import Tuple, List
@@ -14,22 +9,54 @@ from datetime import datetime
 import plotly.graph_objects as go
 import plotly.express as px
 import pytz
-from scipy import stats
+from scipy import stats  # Add this line
 
-# -------------------------------------------------------------
-# 2. --- Page Configuration ---
+# Set page configuration
 st.set_page_config(page_title="Trading Strategy Dashboard", layout="wide")
 
-# -------------------------------------------------------------
-# 3. --- Helper Functions ---
+# Timestamp function
 def get_current_timestamp():
-    """
-    Returns a formatted timestamp for New York time.
-    """
     ny_tz = pytz.timezone('America/New_York')
     ny_time = datetime.now(ny_tz)
-    return ny_time.strftime('%Y-%m-%d %H:%M:%S')
+    formatted_time = ny_time.strftime('%Y-%m-%d %H:%M:%S')
+    return formatted_time
 
+
+
+# Auto-refresh script
+st.markdown(
+    """
+    <script>
+        function updateClock() {
+            const options = {
+                timeZone: 'America/New_York',
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false
+            };
+            const now = new Date();
+            const timeStr = now.toLocaleString('en-US', options)
+                .replace(',', '')
+                .replace(/(\d+)\/(\d+)\/(\d+)/, '$3-$1-$2');
+            document.getElementById('clock').innerHTML = timeStr;
+            requestAnimationFrame(updateClock);
+        }
+        if (document.getElementById('clock')) {
+            updateClock();
+        } else {
+            document.addEventListener('DOMContentLoaded', updateClock);
+        }
+    </script>
+    """,
+    unsafe_allow_html=True
+)
+
+
+# Second section - simulation function
 def simulate_trading_session(
     starting_capital: float,
     profit_target: float,
@@ -48,11 +75,7 @@ def simulate_trading_session(
     max_consecutive_losses: int = 5,
     position_reduction: float = 0.5
 ) -> Tuple[float, List[float], int, int, int, List[bool]]:
-    """
-    Simulates a trading session over multiple days using random outcomes
-    based on the specified win rate and trade configurations.
-    """
-
+    
     capital = starting_capital
     trading_days = 0
     daily_returns = []
@@ -73,7 +96,6 @@ def simulate_trading_session(
         for _ in range(total_trades):
             is_zb = len(daily_trades_result) < zb_trades_per_day
             
-            # Randomly decide if the trade is a win or loss
             if np.random.random() < win_rate:
                 if is_zb:
                     trade_result = zb_win * zb_contracts * zb_position_multiplier
@@ -102,7 +124,6 @@ def simulate_trading_session(
         capital += daily_pnl
         daily_returns.append(daily_pnl)
         
-        # Check if we've hit profit or loss limits
         if capital >= starting_capital + profit_target or capital <= starting_capital - loss_limit:
             break
     
@@ -124,10 +145,6 @@ def run_monte_carlo(
     yen_contracts: int,
     num_simulations: int
 ) -> Tuple[List[float], List[float], List[int], List[int], List[int], List[bool]]:
-    """
-    Runs multiple simulations (Monte Carlo) using the simulate_trading_session function
-    and aggregates the results for further analysis.
-    """
     
     final_capitals = []
     all_daily_returns = []
@@ -164,17 +181,12 @@ def run_monte_carlo(
     return final_capitals, all_daily_returns, days_to_complete, max_losing_streaks, max_winning_streaks, all_trades
 
 def calculate_risk_of_ruin(final_capitals: List[float], starting_capital: float, max_loss: float) -> float:
-    """
-    Calculates the risk of ruin given final capitals from simulations.
-    """
     ruin_level = starting_capital - max_loss
     ruin_count = sum(1 for cap in final_capitals if cap <= ruin_level)
     return ruin_count / len(final_capitals)
 
+
 def calculate_streak_stats(trades: List[bool]) -> dict:
-    """
-    Calculates winning and losing streaks from a list of Boolean trade results.
-    """
     current_streak = 0
     current_type = None
     streaks = {'winning': [], 'losing': []}
@@ -193,7 +205,7 @@ def calculate_streak_stats(trades: List[bool]) -> dict:
             current_type = trade
             current_streak = 1
     
-    # Handle last streak
+    # Add the last streak
     if current_type is not None:
         if current_type:
             streaks['winning'].append(current_streak)
@@ -202,21 +214,29 @@ def calculate_streak_stats(trades: List[bool]) -> dict:
     
     return streaks
 
-# -------------------------------------------------------------
-# 4. --- Title and Main App Setup ---
+# Title and main app setup
 st.title("Trading Strategy Monte Carlo Simulation Dashboard")
 st.markdown("Multi-Instrument Trading Strategy Analysis")
 
-# -------------------------------------------------------------
-# 5. --- Sidebar Configurations ---
+# Sidebar configurations
 with st.sidebar:
-    # Style for the clock
+    # Create a container for the clock with white text
     st.markdown(
         """
         <style>
+            .clock-container { margin-bottom: 20px; }
             .clock { 
                 font-family: monospace; 
                 font-size: 14px;
+                color: white !important;
+            }
+            .white-text {
+                color: white !important;
+            }
+            .stMarkdown div {
+                color: white !important;
+            }
+            .element-container div {
                 color: white !important;
             }
         </style>
@@ -224,7 +244,7 @@ with st.sidebar:
         unsafe_allow_html=True
     )
     
-    # Display Current Date and Time
+    # JavaScript to update the clock
     st.components.v1.html(
         """
         <div style="color: white;">
@@ -256,10 +276,8 @@ with st.sidebar:
         height=70,
     )
     
-    # Display user login (example)
     st.markdown('<p style="color: white;"><strong>Current User\'s Login:</strong> Midoelafreet</p>', unsafe_allow_html=True)
     st.markdown('<hr style="margin: 15px 0;">', unsafe_allow_html=True)
-    
     st.header("Trading Parameters")
     
     # Monte Carlo Parameters
@@ -297,8 +315,7 @@ with st.sidebar:
             value=40
         ) / 100
 
-# -------------------------------------------------------------
-# 6. --- Contract Specifications Section ---
+# Contract Specifications section
 with st.sidebar:
     with st.expander("Contract Specifications", expanded=True):
         col1, col2 = st.columns(2)
@@ -316,16 +333,28 @@ with st.sidebar:
                 value=1, 
                 min_value=1
             )
+            zb_risk_ticks = st.number_input(
+                "ZB Risk (Ticks)", 
+                value=3, 
+                min_value=1
+            )
+            zb_profit_ticks = st.number_input(
+                "ZB Profit (Ticks)", 
+                value=6, 
+                min_value=1
+            )
             zb_commission = st.number_input(
                 "ZB Commission ($ per RT)", 
                 value=3.25, 
                 step=0.01
             )
             
-            st.markdown(
-                "These values will be used if you choose to set static wins/losses for the simulation. "
-                "However, in the 'Enter Trade Result' section, you can define custom ticks for each trade."
-            )
+            # Calculate ZB amounts
+            zb_win = (zb_profit_ticks * zb_tick_value * zb_contracts) - (zb_commission * zb_contracts)
+            zb_loss = (-zb_risk_ticks * zb_tick_value * zb_contracts) - (zb_commission * zb_contracts)
+            
+            st.markdown(f"**ZB Win Amount: ${zb_win:.2f}**")
+            st.markdown(f"**ZB Loss Amount: ${zb_loss:.2f}**")
         
         # Yen Contract Settings
         with col2:
@@ -340,19 +369,30 @@ with st.sidebar:
                 value=1, 
                 min_value=1
             )
+            yen_risk_ticks = st.number_input(
+                "Yen Risk (Ticks)", 
+                value=3, 
+                min_value=1
+            )
+            yen_profit_ticks = st.number_input(
+                "Yen Profit (Ticks)", 
+                value=6, 
+                min_value=1
+            )
             yen_commission = st.number_input(
                 "Yen Commission ($ per RT)", 
                 value=3.25, 
                 step=0.01
             )
             
-            st.markdown(
-                "These values will be used if you choose to set static wins/losses for the simulation. "
-                "But each trade can override them in the 'Enter Trade Result' section."
-            )
+            # Calculate Yen amounts
+            yen_win = (yen_profit_ticks * yen_tick_value * yen_contracts) - (yen_commission * yen_contracts)
+            yen_loss = (-yen_risk_ticks * yen_tick_value * yen_contracts) - (yen_commission * yen_contracts)
+            
+            st.markdown(f"**Yen Win Amount: ${yen_win:.2f}**")
+            st.markdown(f"**Yen Loss Amount: ${yen_loss:.2f}**")
 
-# -------------------------------------------------------------
-# 7. --- Trading Parameters Section ---
+# Trading Parameters section
 with st.sidebar:
     with st.expander("Trading Parameters", expanded=True):
         col1, col2 = st.columns(2)
@@ -369,20 +409,17 @@ with st.sidebar:
                 min_value=1
             )
 
-# -------------------------------------------------------------
-# 8. --- Risk Manager Calculator ---
+# Risk Manager Calculator
 st.header("Daily Risk Manager Calculator")
 with st.expander("Risk Management Calculator", expanded=True):
-    # Initialize session state if not already done
+    # Initialize session state for tracking daily P&L if it doesn't exist
     if 'current_daily_pnl' not in st.session_state:
         st.session_state.current_daily_pnl = 0.0
     if 'zb_trades_taken' not in st.session_state:
         st.session_state.zb_trades_taken = 0
     if 'yen_trades_taken' not in st.session_state:
         st.session_state.yen_trades_taken = 0
-    if 'trade_history' not in st.session_state:
-        st.session_state.trade_history = []
-    
+
     # Display current status
     col1, col2, col3 = st.columns(3)
     with col1:
@@ -395,55 +432,39 @@ with st.expander("Risk Management Calculator", expanded=True):
         st.metric("Yen Trades Taken", f"{st.session_state.yen_trades_taken}/{trades_per_day_yen}")
         st.metric("Yen Trades Remaining", f"{max(trades_per_day_yen - st.session_state.yen_trades_taken, 0)}")
 
-    # -----------------------------
-    # 8.1 Dynamic Trade Entry
-    # -----------------------------
+    # Trade Entry Section
     st.subheader("Enter Trade Result")
-
+    
+    # Create two columns for trade entry
     trade_col1, trade_col2 = st.columns(2)
-
+    
     with trade_col1:
-        # Select market
+        # Trade Input Fields
         market = st.selectbox("Select Market", ["ZB", "Yen"])
-        # How many contracts for this trade
         num_contracts = st.number_input("Number of Contracts", min_value=1, value=1)
-        # Is the trade a win or a loss
         trade_result = st.radio("Trade Result", ["Win", "Loss"])
-
-        # Enter how many ticks risked/profited dynamically
-        risk_ticks = st.number_input("Ticks Risked", min_value=1, value=3)
-        profit_ticks = st.number_input("Ticks Profited", min_value=1, value=6)
-
-    with trade_col2:
-        # Based on market selection, pick the appropriate tick/commission
-        if market == "ZB":
-            tick_value = zb_tick_value
-            commission = zb_commission
-        else:
-            tick_value = yen_tick_value
-            commission = yen_commission
         
+    with trade_col2:
         # Calculate potential P&L
-        if trade_result == "Win":
-            potential_pnl = (profit_ticks * tick_value * num_contracts) - (commission * num_contracts)
+        if market == "ZB":
+            potential_pnl = zb_win * num_contracts if trade_result == "Win" else zb_loss * num_contracts
         else:
-            potential_pnl = - (risk_ticks * tick_value * num_contracts) - (commission * num_contracts)
-
+            potential_pnl = yen_win * num_contracts if trade_result == "Win" else yen_loss * num_contracts
+            
         st.metric("Potential P&L", f"${potential_pnl:.2f}")
-
-        # Check for maximum trades
+        
+        # Warning messages
         if market == "ZB" and st.session_state.zb_trades_taken >= trades_per_day_zb:
             st.warning("⚠️ Maximum ZB trades for the day reached!")
         elif market == "Yen" and st.session_state.yen_trades_taken >= trades_per_day_yen:
             st.warning("⚠️ Maximum Yen trades for the day reached!")
         
-        # Check daily risk limit
         if st.session_state.current_daily_pnl + potential_pnl < -daily_risk_limit:
             st.warning("⚠️ This trade would exceed your daily risk limit!")
 
-    # Button to confirm adding the trade
+    # Add Trade Button
     if st.button("Add Trade"):
-        # Validate if the trade can be placed
+        # Check if trade is allowed
         trade_allowed = True
         if market == "ZB" and st.session_state.zb_trades_taken >= trades_per_day_zb:
             trade_allowed = False
@@ -454,146 +475,134 @@ with st.expander("Risk Management Calculator", expanded=True):
         elif st.session_state.current_daily_pnl + potential_pnl < -daily_risk_limit:
             trade_allowed = False
             st.error("Cannot add trade: Would exceed daily risk limit")
-
-        # Update stats if allowed
+        
         if trade_allowed:
+            # Update P&L and trade counts
             st.session_state.current_daily_pnl += potential_pnl
             if market == "ZB":
                 st.session_state.zb_trades_taken += 1
             else:
                 st.session_state.yen_trades_taken += 1
-
-            # Record trade data
+                
+            # Add trade to history with current timestamp
             trade_data = {
                 'market': market,
                 'contracts': num_contracts,
                 'result': trade_result,
-                'risk_ticks': risk_ticks,
-                'profit_ticks': profit_ticks,
                 'pnl': potential_pnl,
                 'timestamp': get_current_timestamp()
             }
+            if 'trade_history' not in st.session_state:
+                st.session_state.trade_history = []
             st.session_state.trade_history.append(trade_data)
-
+            
             st.success(f"Trade added successfully! New daily P&L: ${st.session_state.current_daily_pnl:.2f}")
+            st.rerun()
 
-    # Button to reset daily stats
+    # Reset Daily Stats Button
     if st.button("Reset Daily Stats"):
         st.session_state.current_daily_pnl = 0.0
         st.session_state.zb_trades_taken = 0
         st.session_state.yen_trades_taken = 0
-        st.session_state.trade_history = []
+        st.session_state.trade_history = []  # Clear trade history
         st.success("Daily stats reset successfully!")
+        st.rerun()
 
-    # -----------------------------
-    # 8.2 Additional Risk Analysis
-    # -----------------------------
+    # Risk Analysis
     st.subheader("Risk Analysis")
     remaining_risk = daily_risk_limit + st.session_state.current_daily_pnl
     risk_percentage = (remaining_risk / daily_risk_limit) * 100
-
-    # Remaining risk progress bar
+    
+    # Create a progress bar for remaining risk
     st.progress(min(max(risk_percentage, 0), 100) / 100)
-
+    
     # Additional risk metrics
     risk_col1, risk_col2 = st.columns(2)
     with risk_col1:
         st.metric("Remaining Risk Amount", f"${max(remaining_risk, 0):.2f}")
-        if remaining_risk > 0:
-            max_zb_trades = int(
-                remaining_risk / abs(- (3 * zb_tick_value * 1) - (zb_commission * 1))
-            )
-        else:
-            max_zb_trades = 0
+        max_zb_trades = int(remaining_risk / abs(zb_loss)) if remaining_risk > 0 else 0
         st.metric("Max Additional ZB Trades Possible", 
-                  min(max_zb_trades, trades_per_day_zb - st.session_state.zb_trades_taken))
+                 min(max_zb_trades, trades_per_day_zb - st.session_state.zb_trades_taken))
     
     with risk_col2:
         st.metric("Risk Utilized", f"${min(daily_risk_limit - remaining_risk, daily_risk_limit):.2f}")
-        if remaining_risk > 0:
-            max_yen_trades = int(
-                remaining_risk / abs(- (3 * yen_tick_value * 1) - (yen_commission * 1))
-            )
-        else:
-            max_yen_trades = 0
+        max_yen_trades = int(remaining_risk / abs(yen_loss)) if remaining_risk > 0 else 0
         st.metric("Max Additional Yen Trades Possible", 
-                  min(max_yen_trades, trades_per_day_yen - st.session_state.yen_trades_taken))
+                 min(max_yen_trades, trades_per_day_yen - st.session_state.yen_trades_taken))
 
-# -------------------------------------------------------------
-# 9. --- Trading Performance Analytics ---
+# PnL Monitoring and Export Section
 st.header("Trading Performance Analytics")
 with st.expander("Daily Performance & Export", expanded=True):
-    if st.session_state.trade_history:
-        df_trades = pd.DataFrame(st.session_state.trade_history)
-        
-        # 9.1 Cumulative P&L Chart
-        chart_col1, chart_col2 = st.columns(2)
-        with chart_col1:
+    # Initialize trade history if it doesn't exist
+    if 'trade_history' not in st.session_state:
+        st.session_state.trade_history = []
+    
+    # Create columns for charts
+    chart_col1, chart_col2 = st.columns(2)
+    
+    with chart_col1:
+        # Cumulative PnL Chart
+        if st.session_state.trade_history:
+            df_trades = pd.DataFrame(st.session_state.trade_history)
             df_trades['cumulative_pnl'] = df_trades['pnl'].cumsum()
             
-            fig_pnl = px.line(
-                df_trades, 
-                y='cumulative_pnl',
-                title='Cumulative PnL Throughout the Day',
-                labels={'cumulative_pnl': 'Cumulative PnL ($)', 'index': 'Trade #'}
-            )
+            fig_pnl = px.line(df_trades, 
+                            y='cumulative_pnl',
+                            title='Cumulative PnL Throughout the Day',
+                            labels={'cumulative_pnl': 'Cumulative PnL ($)',
+                                   'index': 'Trade Number'})
             fig_pnl.add_hline(y=0, line_dash="dash", line_color="gray")
             st.plotly_chart(fig_pnl, use_container_width=True)
-        
-        # 9.2 Win Rate by Market
-        with chart_col2:
+        else:
+            st.info("No trades recorded yet today")
+    
+    with chart_col2:
+        # Win Rate by Market
+        if st.session_state.trade_history:
             win_rates = {}
             for market_type in ['ZB', 'Yen']:
-                market_trades = df_trades[df_trades['market'] == market_type]
-                if not market_trades.empty:
-                    wins = len(market_trades[market_trades['pnl'] > 0])
+                market_trades = [t for t in st.session_state.trade_history if t['market'] == market_type]
+                if market_trades:
+                    wins = len([t for t in market_trades if t['pnl'] > 0])
                     total = len(market_trades)
                     win_rates[market_type] = (wins / total) * 100
             
-            if win_rates:
-                fig_winrate = px.bar(
-                    x=list(win_rates.keys()),
-                    y=list(win_rates.values()),
-                    title='Win Rate by Market',
-                    labels={'x': 'Market', 'y': 'Win Rate (%)'}
-                )
-                fig_winrate.update_layout(yaxis_range=[0, 100])
-                st.plotly_chart(fig_winrate, use_container_width=True)
-            else:
-                st.info("No trades recorded yet today")
-        
-        # 9.3 Export Section
-        st.subheader("Export Trading Data")
+            fig_winrate = px.bar(
+                x=list(win_rates.keys()),
+                y=list(win_rates.values()),
+                title='Win Rate by Market',
+                labels={'x': 'Market', 'y': 'Win Rate (%)'}
+            )
+            fig_winrate.update_layout(yaxis_range=[0, 100])
+            st.plotly_chart(fig_winrate, use_container_width=True)
+        else:
+            st.info("No trades recorded yet today")
+
+    # Export Section
+    st.subheader("Export Trading Data")
+    if st.session_state.trade_history:
+        df_export = pd.DataFrame(st.session_state.trade_history)
         current_time = get_current_timestamp()
-        csv_data = df_trades.to_csv(index=False)
+        csv = df_export.to_csv(index=False)
+        
         st.download_button(
             label="📥 Download Trading Data (CSV)",
-            data=csv_data,
+            data=csv,
             file_name=f"trading_data_{current_time.split()[0]}.csv",
             mime="text/csv",
-            key="download_csv"
+            key="download_csv",
+            help="Click to download your trading data as a CSV file"
         )
         
-        st.dataframe(df_trades, use_container_width=True)
+        # Display current data
+        st.dataframe(df_export, use_container_width=True)
     else:
-        st.info("No trades to export or analyze yet")
+        st.info("No trades to export yet")
 
-# -------------------------------------------------------------
-# 10. --- Monte Carlo Simulation and Visualization ---
+    
+# Main content area - Simulation execution
 if st.button("Run Monte Carlo Simulation", type="primary"):
     with st.spinner("Running simulation..."):
-        # For demonstration, define static win/loss for each contract:
-        zb_risk_ticks = 3
-        zb_profit_ticks = 6
-        yen_risk_ticks = 3
-        yen_profit_ticks = 6
-        
-        # Calculate static wins/losses for simulation
-        zb_win = (zb_profit_ticks * zb_tick_value * zb_contracts) - (zb_commission * zb_contracts)
-        zb_loss = - (zb_risk_ticks * zb_tick_value * zb_contracts) - (zb_commission * zb_contracts)
-        yen_win = (yen_profit_ticks * yen_tick_value * yen_contracts) - (yen_commission * yen_contracts)
-        yen_loss = - (yen_risk_ticks * yen_tick_value * yen_contracts) - (yen_commission * yen_contracts)
-
         # Run the simulation
         final_capitals, daily_returns, days_to_complete, \
         max_losing_streaks, max_winning_streaks, all_trades = run_monte_carlo(
@@ -629,7 +638,7 @@ if st.button("Run Monte Carlo Simulation", type="primary"):
         col1, col2, col3 = st.columns(3)
         with col1:
             st.metric("Profit Probability", f"{profit_probability:.1f}%")
-            st.metric("Risk of Ruin", f"{risk_of_ruin*100:.1f}%")
+            st.metric("Risk of Ruin", f"{risk_of_ruin:.1f}%")
         with col2:
             st.metric("Average Days", f"{avg_days:.1f}")
             st.metric("Maximum Days", f"{max_days}")
@@ -637,24 +646,9 @@ if st.button("Run Monte Carlo Simulation", type="primary"):
             st.metric("Minimum Days", f"{min_days}")
             st.metric("Total Simulations", f"{num_simulations:,}")
 
-        # Save results in session so we can show plots
-        st.session_state.final_capitals = final_capitals
-        st.session_state.daily_returns = daily_returns
-        st.session_state.days_to_complete = days_to_complete
-        st.session_state.max_losing_streaks = max_losing_streaks
-        st.session_state.max_winning_streaks = max_winning_streaks
-        st.session_state.all_trades_for_streak = all_trades
-
-# -------------------------------------------------------------
-# 11. --- Visualization of Simulation Results ---
-if 'final_capitals' in st.session_state:
-    final_capitals = st.session_state.final_capitals
-    daily_returns = st.session_state.daily_returns
-    days_to_complete = st.session_state.days_to_complete
-    max_losing_streaks = st.session_state.max_losing_streaks
-    max_winning_streaks = st.session_state.max_winning_streaks
-    all_trades_for_streak = st.session_state.all_trades_for_streak
-
+# Visualization section
+if 'final_capitals' in locals():
+    # Create tabs for different visualizations
     tab1, tab2, tab3, tab4 = st.tabs([
         "Capital Distribution", 
         "Daily Returns", 
@@ -662,9 +656,10 @@ if 'final_capitals' in st.session_state:
         "Detailed Statistics"
     ])
 
-    # 11.1 Capital Distribution
     with tab1:
         st.subheader("Final Capital Distribution")
+        
+        # Create distribution plot using plotly
         fig = go.Figure()
         fig.add_trace(go.Histogram(
             x=final_capitals,
@@ -673,6 +668,7 @@ if 'final_capitals' in st.session_state:
             opacity=0.75
         ))
         
+        # Add vertical lines for key metrics
         fig.add_vline(x=starting_capital, line_dash="dash", line_color="yellow", annotation_text="Starting Capital")
         fig.add_vline(x=starting_capital + profit_target, line_dash="dash", line_color="green", annotation_text="Profit Target")
         fig.add_vline(x=starting_capital - loss_limit, line_dash="dash", line_color="red", annotation_text="Loss Limit")
@@ -686,9 +682,10 @@ if 'final_capitals' in st.session_state:
         )
         st.plotly_chart(fig, use_container_width=True)
 
-    # 11.2 Daily Returns
     with tab2:
         st.subheader("Daily Returns Analysis")
+        
+        # Create daily returns distribution
         fig = go.Figure()
         fig.add_trace(go.Histogram(
             x=daily_returns,
@@ -706,18 +703,24 @@ if 'final_capitals' in st.session_state:
         )
         st.plotly_chart(fig, use_container_width=True)
 
-    # 11.3 Trading Streaks
     with tab3:
         st.subheader("Trading Streaks Analysis")
-        streak_stats = calculate_streak_stats(all_trades_for_streak)
         
+        # Calculate streak statistics
+        streak_stats = calculate_streak_stats(all_trades)
+        
+        # Create streak distribution plots
         fig = go.Figure()
+        
+        # Winning streaks
         fig.add_trace(go.Histogram(
             x=streak_stats['winning'],
             name="Winning Streaks",
             opacity=0.75,
             marker_color='green'
         ))
+        
+        # Losing streaks
         fig.add_trace(go.Histogram(
             x=streak_stats['losing'],
             name="Losing Streaks",
@@ -734,50 +737,22 @@ if 'final_capitals' in st.session_state:
         )
         st.plotly_chart(fig, use_container_width=True)
         
+        # Display streak statistics
         col1, col2 = st.columns(2)
         with col1:
             st.metric("Max Winning Streak", f"{max(max_winning_streaks)}")
-            if streak_stats['winning']:
-                avg_win_streak = sum(streak_stats['winning']) / len(streak_stats['winning'])
-                st.metric("Avg Winning Streak", f"{avg_win_streak:.2f}")
-            else:
-                st.metric("Avg Winning Streak", "0")
+            st.metric("Avg Winning Streak", f"{sum(streak_stats['winning']) / len(streak_stats['winning']):.2f}")
         with col2:
             st.metric("Max Losing Streak", f"{max(max_losing_streaks)}")
-            if streak_stats['losing']:
-                avg_lose_streak = sum(streak_stats['losing']) / len(streak_stats['losing'])
-                st.metric("Avg Losing Streak", f"{avg_lose_streak:.2f}")
-            else:
-                st.metric("Avg Losing Streak", "0")
+            st.metric("Avg Losing Streak", f"{sum(streak_stats['losing']) / len(streak_stats['losing']):.2f}")
 
-    # 11.4 Detailed Statistics
     with tab4:
         st.subheader("Detailed Statistics")
         
+        # Calculate additional statistics
         final_capitals_array = np.array(final_capitals)
         daily_returns_array = np.array(daily_returns)
-
-        def safe_div(x, y):
-            return x / y if y != 0 else 0
-
-        mean_capital = np.mean(final_capitals_array)
-        median_capital = np.median(final_capitals_array)
-        std_capital = np.std(final_capitals_array)
-        skew_capital = stats.skew(final_capitals_array)
-        kurt_capital = stats.kurtosis(final_capitals_array)
         
-        mean_daily_return = np.mean(daily_returns_array) if len(daily_returns_array) > 0 else 0
-        median_daily_return = np.median(daily_returns_array) if len(daily_returns_array) > 0 else 0
-        std_daily_return = np.std(daily_returns_array) if len(daily_returns_array) > 0 else 1
-        
-        # Sharpe Ratio (assuming 0% risk-free)
-        sharpe_ratio = safe_div(mean_daily_return, std_daily_return)
-
-        # Profit Factor = sum of positive returns /| sum of negative returns|
-        total_positive = sum(r for r in daily_returns_array if r > 0)
-        total_negative = sum(r for r in daily_returns_array if r < 0)
-        profit_factor = safe_div(total_positive, abs(total_negative)) if total_negative != 0 else 0
-
         stats_data = {
             "Metric": [
                 "Mean Final Capital",
@@ -788,22 +763,23 @@ if 'final_capitals' in st.session_state:
                 "Mean Daily Return",
                 "Median Daily Return",
                 "Std Dev Daily Return",
-                "Sharpe Ratio (0% RF)",
+                "Sharpe Ratio (0% risk-free)",
                 "Profit Factor"
             ],
             "Value": [
-                f"${mean_capital:.2f}",
-                f"${median_capital:.2f}",
-                f"${std_capital:.2f}",
-                f"{skew_capital:.3f}",
-                f"{kurt_capital:.3f}",
-                f"${mean_daily_return:.2f}",
-                f"${median_daily_return:.2f}",
-                f"${std_daily_return:.2f}",
-                f"{sharpe_ratio:.3f}",
-                f"{profit_factor:.3f}",
+                f"${np.mean(final_capitals_array):.2f}",
+                f"${np.median(final_capitals_array):.2f}",
+                f"${np.std(final_capitals_array):.2f}",
+                f"{stats.skew(final_capitals_array):.3f}",
+                f"{stats.kurtosis(final_capitals_array):.3f}",
+                f"${np.mean(daily_returns_array):.2f}",
+                f"${np.median(daily_returns_array):.2f}",
+                f"${np.std(daily_returns_array):.2f}",
+                f"{np.mean(daily_returns_array) / np.std(daily_returns_array):.3f}",
+                f"{abs(sum(r for r in daily_returns if r > 0)) / abs(sum(r for r in daily_returns if r < 0)):.3f}"
             ]
         }
         
+        # Create and display the statistics table
         stats_df = pd.DataFrame(stats_data)
         st.table(stats_df.set_index('Metric'))
